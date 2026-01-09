@@ -2,84 +2,33 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Paket Pintar Dashboard</title>
+  <title>Paket Pintar</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+
   <div class="container">
+    <h1>📦 Paket Pintar</h1>
 
-    <!-- Header -->
-    <header class="header">
-      <div class="header-content">
-        <h1 class="logo">📦 Paket Pintar</h1>
-        <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
-          <span class="theme-icon">🌙</span>
-        </button>
-      </div>
-    </header>
+    <div id="statusBox">
+      <span>Status ESP32:</span>
+      <strong id="statusText">DISCONNECTED</strong>
+    </div>
 
-    <!-- Tabs -->
-    <nav class="tab-nav">
-      <button class="tab-btn active" data-tab="chat" onclick="showTab('chat')">
-        💬 Chat
-      </button>
-      <button class="tab-btn" data-tab="dashboard" onclick="showTab('dashboard')">
-        📊 Dashboard
-      </button>
-    </nav>
+    <div class="controls">
+      <button onclick="askName()">Ask Name</button>
+      <button onclick="closeBox()">Close Box</button>
+    </div>
 
-    <!-- Content -->
-    <main class="content">
+    <div class="input-area">
+      <input type="text" id="nameInput" placeholder="Masukkan nama penerima">
+      <button onclick="sendName()">Kirim Nama</button>
+    </div>
 
-      <!-- Chat -->
-      <section id="chat" class="tab-content active">
-        <div class="chat-container">
-          <div id="chat-log" class="chat-log">
-            <div class="chat-message welcome">
-              <p><strong>Asisten AI</strong></p>
-              <p>Halo! Saya siap membantu Anda.</p>
-            </div>
-          </div>
-
-          <div class="chat-input-area">
-            <textarea id="message" class="chat-input" rows="3" placeholder="Ketik pesan..."></textarea>
-            <button class="btn btn-primary" onclick="sendChat()">Kirim →</button>
-          </div>
-
-          <div class="audio-section">
-            <label class="audio-label">Audio Response</label>
-            <audio id="tts-player" controls></audio>
-          </div>
-        </div>
-      </section>
-
-      <!-- Dashboard -->
-      <section id="dashboard" class="tab-content">
-        <div class="dashboard-container">
-
-          <div class="dashboard-section">
-            <h2>📈 Status Log</h2>
-            <ul id="status-log" class="status-log"></ul>
-          </div>
-
-          <div class="dashboard-section">
-            <h2>⚙️ Kontrol</h2>
-
-            <input id="name-input" class="form-input" placeholder="Nama penerima..." />
-
-            <div class="button-grid">
-              <button class="btn btn-primary" onclick="sendCommand('name')">Buka Box</button>
-              <button class="btn btn-danger" onclick="sendCommand('close_box')">Tutup Box</button>
-              <button class="btn btn-secondary" onclick="sendCommand('ask_name')">Ask Name</button>
-              <button class="btn btn-secondary" onclick="sendCommand('invalid_name')">Invalid Name</button>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-    </main>
+    <div class="log">
+      <h3>Log</h3>
+      <pre id="logBox"></pre>
+    </div>
   </div>
 
   <script src="main.js"></script>
