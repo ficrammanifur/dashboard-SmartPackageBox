@@ -1,4 +1,4 @@
-const API_BASE = "https://db257057bcd0.ngrok-free.app"; /* http://10.224.26.179:5000 */
+const API_BASE = "http://127.0.0.1:4040"; /* http://10.224.26.179:5000 */
 
 const statusText = document.getElementById("statusText");
 const logBox = document.getElementById("logBox");
