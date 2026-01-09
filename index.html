@@ -1,100 +1,87 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📦 Paket Pintar – AI Delivery Assistant</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paket Pintar Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <div class="logo-section">
-                    <span class="logo-icon">📦</span>
-                    <div class="logo-text">
-                        <h1>Paket Pintar</h1>
-                        <p>AI Delivery Assistant</p>
-                    </div>
-                </div>
-                <div class="connection-status">
-                    <span class="status-indicator" id="mqtt-status"></span>
-                    <span id="mqtt-text">Menghubungkan...</span>
-                </div>
+  <div class="container">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="header-content">
+        <h1 class="logo">📦 Paket Pintar</h1>
+        <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+          <span class="theme-icon">🌙</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Tabs -->
+    <nav class="tab-nav">
+      <button class="tab-btn active" data-tab="chat" onclick="showTab('chat')">
+        💬 Chat
+      </button>
+      <button class="tab-btn" data-tab="dashboard" onclick="showTab('dashboard')">
+        📊 Dashboard
+      </button>
+    </nav>
+
+    <!-- Content -->
+    <main class="content">
+
+      <!-- Chat -->
+      <section id="chat" class="tab-content active">
+        <div class="chat-container">
+          <div id="chat-log" class="chat-log">
+            <div class="chat-message welcome">
+              <p><strong>Asisten AI</strong></p>
+              <p>Halo! Saya siap membantu Anda.</p>
             </div>
-        </header>
+          </div>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- AI Status Section -->
-            <section class="status-card ai-status">
-                <div class="card-header">
-                    <h2>⚙️ Status AI</h2>
-                    <span class="badge">Real-time</span>
-                </div>
-                <div class="status-grid">
-                    <div class="status-item" id="status-listening">
-                        <div class="status-icon listening-icon">🎤</div>
-                        <span class="status-label">Listening</span>
-                    </div>
-                    <div class="status-item" id="status-thinking">
-                        <div class="status-icon thinking-icon">💭</div>
-                        <span class="status-label">Thinking</span>
-                    </div>
-                    <div class="status-item" id="status-speaking">
-                        <div class="status-icon speaking-icon">🔊</div>
-                        <span class="status-label">Speaking</span>
-                    </div>
-                    <div class="status-item" id="status-sleep">
-                        <div class="status-icon sleep-icon">😴</div>
-                        <span class="status-label">Sleep</span>
-                    </div>
-                </div>
-            </section>
+          <div class="chat-input-area">
+            <textarea id="message" class="chat-input" rows="3" placeholder="Ketik pesan..."></textarea>
+            <button class="btn btn-primary" onclick="sendChat()">Kirim →</button>
+          </div>
 
-            <!-- Package Info Section -->
-            <section class="status-card package-info">
-                <div class="card-header">
-                    <h2>📬 Info Paket</h2>
-                    <span class="badge">Current</span>
-                </div>
-                <div class="package-details">
-                    <div class="detail-row">
-                        <span class="label">Status Paket:</span>
-                        <span class="value" id="package-status">Menunggu deteksi</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="label">Penerima:</span>
-                        <span class="value" id="recipient-name">-</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="label">Waktu Delivery:</span>
-                        <span class="value" id="delivery-time">-</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="label">AI Response:</span>
-                        <span class="value" id="ai-response">Menunggu...</span>
-                    </div>
-                </div>
-            </section>
+          <div class="audio-section">
+            <label class="audio-label">Audio Response</label>
+            <audio id="tts-player" controls></audio>
+          </div>
+        </div>
+      </section>
 
-            <!-- Activity Log Section -->
-            <section class="status-card activity-log">
-                <div class="card-header">
-                    <h2>📋 Log Aktivitas</h2>
-                    <button class="btn-clear" id="clear-logs">Hapus Log</button>
-                </div>
-                <div class="log-container" id="activity-logs">
-                    <div class="log-entry info">
-                        <span class="timestamp">--:--:--</span>
-                        <span class="message">Sistem dimulai. Menunggu perangkat...</span>
-                    </div>
-                </div>
-            </section>
-        </main>
-    </div>
+      <!-- Dashboard -->
+      <section id="dashboard" class="tab-content">
+        <div class="dashboard-container">
 
-    <script src="main.js"></script>
+          <div class="dashboard-section">
+            <h2>📈 Status Log</h2>
+            <ul id="status-log" class="status-log"></ul>
+          </div>
+
+          <div class="dashboard-section">
+            <h2>⚙️ Kontrol</h2>
+
+            <input id="name-input" class="form-input" placeholder="Nama penerima..." />
+
+            <div class="button-grid">
+              <button class="btn btn-primary" onclick="sendCommand('name')">Buka Box</button>
+              <button class="btn btn-danger" onclick="sendCommand('close_box')">Tutup Box</button>
+              <button class="btn btn-secondary" onclick="sendCommand('ask_name')">Ask Name</button>
+              <button class="btn btn-secondary" onclick="sendCommand('invalid_name')">Invalid Name</button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="main.js"></script>
 </body>
 </html>
