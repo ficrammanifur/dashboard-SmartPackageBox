@@ -1,249 +1,103 @@
-// ================= MQTT Configuration =================
-const MQTT_BROKER_URL = "wss://test.mosquitto.org:8081"
-const MQTT_TOPIC_STATUS = "package/status"
-const MQTT_TOPIC_COMMAND = "package/command"
-const MQTT_TOPIC_RESPONSE = "package/response"
+// 🔧 GANTI DENGAN URL BACKEND FLASK KAMU
+const API_BASE = "https://PASTE-BACKEND-URL-KAMU";
 
-let client = null
-let isConnected = false
+let currentTab = "chat";
 
-// Declare Paho variable before using it
-const Paho = window.Paho
+function showTab(tab) {
+  document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
 
-// ================= Initialize MQTT Connection =================
-function initMQTT() {
-  const clientId = "paket-pintar-" + Math.random().toString(16).substr(2, 8)
+  document.getElementById(tab).classList.add("active");
+  document.querySelector(`[data-tab="${tab}"]`).classList.add("active");
 
-  client = new Paho.MQTT.Client(MQTT_BROKER_URL, clientId)
+  currentTab = tab;
+  if (tab === "dashboard") updateStatus();
+}
 
-  client.onConnectionLost = onConnectionLost
-  client.onMessageArrived = onMessageArrived
+function toggleTheme() {
+  const theme = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", theme);
+  localStorage.setItem("theme", theme);
+  document.querySelector(".theme-icon").textContent = theme === "dark" ? "☀️" : "🌙";
+}
 
-  client.connect({
-    onSuccess: onConnect,
-    useSSL: true,
-    cleanSession: true,
-    reconnect: true,
+function sendChat() {
+  const msg = document.getElementById("message").value.trim();
+  if (!msg) return;
+
+  fetch(`${API_BASE}/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: msg,
+      input_type: "text",
+      user_id: "web-user"
+    })
   })
+    .then(res => res.json())
+    .then(data => {
+      const log = document.getElementById("chat-log");
+
+      log.innerHTML += `
+        <div class="chat-message">
+          <p><strong>You:</strong></p>
+          <p>${escapeHtml(msg)}</p>
+        </div>
+        <div class="chat-message">
+          <p><strong>AI:</strong></p>
+          <p>${escapeHtml(data.text)}</p>
+        </div>
+      `;
+
+      log.scrollTop = log.scrollHeight;
+
+      if (data.audio_url) {
+        const audio = document.getElementById("tts-player");
+        audio.src = API_BASE + data.audio_url + "?t=" + Date.now();
+        audio.play();
+      }
+    })
+    .catch(err => console.error(err));
+
+  document.getElementById("message").value = "";
 }
 
-function onConnect() {
-  isConnected = true
-  updateMQTTStatus(true)
-  addLog("MQTT berhasil terkoneksi", "success")
+function sendCommand(cmd) {
+  const payload = { command: cmd };
+  if (cmd === "name") payload.name = document.getElementById("name-input").value;
 
-  // Subscribe ke topics
-  client.subscribe(MQTT_TOPIC_STATUS)
-  client.subscribe(MQTT_TOPIC_RESPONSE)
-}
-
-function onConnectionLost(responseObject) {
-  isConnected = false
-  updateMQTTStatus(false)
-
-  if (responseObject.errorCode !== 0) {
-    addLog("Koneksi MQTT terputus: " + responseObject.errorMessage, "error")
-  }
-}
-
-function onMessageArrived(message) {
-  const topic = message.destinationName
-  const payload = message.payloadString
-
-  console.log(`[MQTT] Topic: ${topic}, Payload: ${payload}`)
-
-  if (topic === MQTT_TOPIC_STATUS) {
-    handleStatusUpdate(payload)
-  } else if (topic === MQTT_TOPIC_RESPONSE) {
-    handleResponseUpdate(payload)
-  }
-}
-
-function updateMQTTStatus(connected) {
-  const indicator = document.querySelector(".status-indicator")
-  const text = document.getElementById("mqtt-text")
-
-  if (connected) {
-    indicator.classList.add("connected")
-    indicator.classList.remove("disconnected")
-    text.textContent = "Terhubung"
-    addLog("Status MQTT: Terhubung", "success")
-  } else {
-    indicator.classList.remove("connected")
-    indicator.classList.add("disconnected")
-    text.textContent = "Terputus"
-    addLog("Status MQTT: Terputus", "error")
-  }
-}
-
-// ================= Status Management =================
-let currentStatus = null
-
-function handleStatusUpdate(status) {
-  currentStatus = status
-  updateStatusDisplay(status)
-  addLog(`Status AI: ${status}`, "info")
-
-  // Play notification sound (optional)
-  playNotification()
-}
-
-function updateStatusDisplay(status) {
-  // Remove active class from all
-  document.querySelectorAll(".status-item").forEach((item) => {
-    item.classList.remove("active")
+  fetch(`${API_BASE}/command`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
   })
-
-  // Add active class to current status
-  const statusMap = {
-    listening: "status-listening",
-    thinking: "status-thinking",
-    speaking: "status-speaking",
-    sleep: "status-sleep",
-  }
-
-  if (statusMap[status]) {
-    document.getElementById(statusMap[status])?.classList.add("active")
-  }
+    .then(res => res.json())
+    .then(d => alert(d.success ? "✓ Perintah dikirim" : "✗ Gagal"))
+    .catch(console.error);
 }
 
-function handleResponseUpdate(response) {
-  try {
-    const data = JSON.parse(response)
-
-    // Update package info
-    if (data.name) {
-      document.getElementById("recipient-name").textContent = data.name
-      addLog(`📦 Paket untuk: ${data.name}`, "success")
-    }
-
-    if (data.tts_text) {
-      document.getElementById("ai-response").textContent = data.tts_text
-      addLog(`🤖 AI: ${data.tts_text}`, "info")
-    }
-
-    if (data.status) {
-      document.getElementById("package-status").textContent = data.status
-    }
-  } catch (e) {
-    console.error("Error parsing response:", e)
-    document.getElementById("ai-response").textContent = response
-  }
+function updateStatus() {
+  fetch(`${API_BASE}/status`)
+    .then(res => res.json())
+    .then(data => {
+      const ul = document.getElementById("status-log");
+      ul.innerHTML = "";
+      data.statuses.forEach(s => {
+        const li = document.createElement("li");
+        li.textContent = s;
+        ul.appendChild(li);
+      });
+    });
 }
 
-// ================= Activity Log =================
-function addLog(message, type = "info") {
-  const logContainer = document.getElementById("activity-logs")
-  const timestamp = new Date().toLocaleTimeString("id-ID", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  })
-
-  const logEntry = document.createElement("div")
-  logEntry.className = `log-entry ${type}`
-  logEntry.innerHTML = `
-        <span class="timestamp">${timestamp}</span>
-        <span class="message">${message}</span>
-    `
-
-  logContainer.appendChild(logEntry)
-  logContainer.scrollTop = logContainer.scrollHeight
-
-  // Keep max 50 logs
-  const entries = logContainer.querySelectorAll(".log-entry")
-  if (entries.length > 50) {
-    entries[0].remove()
-  }
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
 }
 
-function clearLogs() {
-  const logContainer = document.getElementById("activity-logs")
-  logContainer.innerHTML = ""
-  addLog("Log telah dihapus", "info")
-}
-
-// ================= UI Interactions =================
-document.getElementById("clear-logs")?.addEventListener("click", clearLogs)
-
-// Status item click handler
-document.querySelectorAll(".status-item").forEach((item) => {
-  item.addEventListener("click", function () {
-    const status = this.id.replace("status-", "")
-    addLog(`Status ${status} diklik`, "info")
-  })
-})
-
-// ================= Notifications =================
-function playNotification() {
-  // Create a simple beep sound using Web Audio API
-  const audioContext = new (window.AudioContext || window.webkitAudioContext)()
-  const oscillator = audioContext.createOscillator()
-  const gain = audioContext.createGain()
-
-  oscillator.connect(gain)
-  gain.connect(audioContext.destination)
-
-  oscillator.frequency.value = 800
-  oscillator.type = "sine"
-
-  gain.gain.setValueAtTime(0.3, audioContext.currentTime)
-  gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1)
-
-  oscillator.start(audioContext.currentTime)
-  oscillator.stop(audioContext.currentTime + 0.1)
-}
-
-// ================= Simulation Mode (for testing without MQTT) =================
-function simulateStatus() {
-  const statuses = ["listening", "thinking", "speaking", "sleep"]
-  const randomStatus = statuses[Math.floor(Math.random() * statuses.length)]
-  handleStatusUpdate(randomStatus)
-}
-
-function simulateResponse() {
-  const responses = [
-    { name: "Budi Santoso", tts_text: "Permisi, paket untuk Anda", status: "Paket diterima" },
-    { name: "Siti Nurhaliza", tts_text: "Ada paket dari Tokopedia", status: "Menunggu penerima" },
-    { name: "Ahmad Wijaya", tts_text: "Silakan ambil paket Anda", status: "Paket sudah dibuka" },
-  ]
-
-  const randomResponse = responses[Math.floor(Math.random() * responses.length)]
-  handleResponseUpdate(JSON.stringify(randomResponse))
-}
-
-// ================= Initialize =================
 document.addEventListener("DOMContentLoaded", () => {
-  // Try to initialize MQTT
-  try {
-    // Check if Paho MQTT is available
-    if (typeof Paho !== "undefined") {
-      initMQTT()
-    } else {
-      console.warn("Paho MQTT library not loaded. Enable simulation mode.")
-      updateMQTTStatus(false)
-      addLog("MQTT library tidak ditemukan. Mode simulasi aktif.", "warning")
-    }
-  } catch (e) {
-    console.error("MQTT initialization error:", e)
-    updateMQTTStatus(false)
-    addLog("Gagal menginisialisasi MQTT", "error")
-  }
-
-  // Initialize with default status
-  updateStatusDisplay("sleep")
-  addLog("Dashboard dimulai. Menunggu perangkat...", "info")
-})
-
-// Optional: Keyboard shortcuts for testing
-document.addEventListener("keydown", (e) => {
-  // Ctrl+S for simulate status
-  if (e.ctrlKey && e.key === "s") {
-    simulateStatus()
-  }
-
-  // Ctrl+R for simulate response
-  if (e.ctrlKey && e.key === "r") {
-    simulateResponse()
-  }
-})
+  const theme = localStorage.getItem("theme");
+  if (theme) document.documentElement.setAttribute("data-theme", theme);
+  showTab("chat");
+});
